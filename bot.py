@@ -1,23 +1,20 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, CallbackContext
+from flask import Flask, request
+import os
 
+
+app = Flask(__name__)
 
 # Create an Application object
 application = Application.builder().token("7699996331:AAHK8AWzaOqgd1K2XoyFDYukAYI7RUCTyo8").build()
 
 # Define the start command function
 async def start(update: Update, context: CallbackContext) -> None:
-    # Define the inline buttons
     keyboard = [
-        [
-            InlineKeyboardButton("Airdrops", callback_data="airdrop"),
-            InlineKeyboardButton("Other Option", callback_data="other_option"),
-        ]
+        [InlineKeyboardButton("Airdrops", callback_data="airdrop")]
     ]
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
-    
-    # Send a message with the inline buttons
     await update.message.reply_text("Choose an option below:", reply_markup=reply_markup)
 
 # Define the button press handler
@@ -25,17 +22,24 @@ async def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
     await query.answer()  # Acknowledge the click
 
-    # Handle the button action
     if query.data == "airdrop":
         await query.edit_message_text(text="You clicked on Airdrops!")
-    elif query.data == "other_option":
-        await query.edit_message_text(text="You clicked on Other Option!")
 
-# Add command handler for "/start"
+# Add command and callback handlers
 application.add_handler(CommandHandler("start", start))
-
-# Add the handler for the button clicks
 application.add_handler(CallbackQueryHandler(button))
 
-# Run the bot
-application.run_polling()
+# Set up webhook route for Flask
+@app.route('/' + os.getenv('BOT_TOKEN'), methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = Update.de_json(json_str, application.bot)
+    application.process_update(update)
+    return '', 200
+
+# Set webhook
+application.bot.set_webhook(url="https://airdropworld.netlify.app/" + os.getenv('BOT_TOKEN'))
+
+# Start the Flask app
+if __name__ == "__main__":
+    app.run(port=5000)
