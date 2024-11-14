@@ -3,7 +3,6 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Call
 from flask import Flask, request
 import os
 
-
 app = Flask(__name__)
 
 # Create an Application object
@@ -30,16 +29,17 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CallbackQueryHandler(button))
 
 # Set up webhook route for Flask
-@app.route('/' + os.getenv('BOT_TOKEN'), methods=['POST'])
+@app.route('/webhook', methods=['POST'])
 def webhook():
     json_str = request.get_data().decode('UTF-8')
     update = Update.de_json(json_str, application.bot)
     application.process_update(update)
     return '', 200
 
-# Set webhook
-application.bot.set_webhook(url="https://airdropworld.netlify.app/" + os.getenv('BOT_TOKEN'))
+# Set webhook (Update with your actual deployed URL)
+application.bot.set_webhook(url="https://airdropworld.netlify.app/")
 
 # Start the Flask app
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
